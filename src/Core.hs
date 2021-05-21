@@ -27,7 +27,8 @@ data StepResult
 data Build = Build
   { pipeline :: Pipeline,
     state :: BuildState,
-    completedSteps :: Map StepName StepResult
+    completedSteps :: Map StepName StepResult,
+    volume :: Docker.Volume
   }
   deriving (Eq, Show)
 
@@ -38,8 +39,8 @@ data BuildState
   deriving (Eq, Show)
 
 data BuildRunningState = BuildRunningState
-  { step :: StepName
-  , container :: Docker.ContainerId
+  { step :: StepName,
+    container :: Docker.ContainerId
   }
   deriving (Eq, Show)
 
@@ -81,22 +82,24 @@ progress docker build =
         Left result ->
           pure $ build{state = BuildFinished result}
         Right step -> do
-          let script = Text.unlines
-                $ ["set -ex"] <> NonEmpty.toList step.commands
+          let script =
+                Text.unlines $
+                  ["set -ex"] <> NonEmpty.toList step.commands
           let options =
                 Docker.CreateContainerOptions
-                  { image = step.image
-                  , script = script
+                  { image = step.image,
+                    script = script,
+                    volume = build.volume
                   }
           container <- docker.createContainer options
           docker.startContainer container
 
-          let s = BuildRunningState
-                    { step = step.name
-                    , container = container
-                    }
+          let s =
+                BuildRunningState
+                  { step = step.name,
+                    container = container
+                  }
           pure $ build{state = BuildRunning s}
-
     BuildRunning state -> do
       status <- docker.containerStatus state.container
 
@@ -105,11 +108,12 @@ progress docker build =
           pure build
         Docker.ContainerExited exit -> do
           let result = exitCodeToStepResult exit
-          pure build
-            { completedSteps
-                = Map.insert state.step result build.completedSteps
-            , state = BuildReady
-            }
+          pure
+            build
+              { completedSteps =
+                  Map.insert state.step result build.completedSteps,
+                state = BuildReady
+              }
         Docker.ContainerOther other -> do
           let s = BuildUnexpectedState other
           pure build{state = BuildFinished s}

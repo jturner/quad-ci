@@ -8,14 +8,16 @@ import RIO
 import qualified Socket
 
 data CreateContainerOptions = CreateContainerOptions
-  { image :: Image
-  , script :: Text
+  { image :: Image,
+    script :: Text,
+    volume :: Volume
   }
 
 data Service = Service
   { createContainer :: CreateContainerOptions -> IO ContainerId,
-    startContainer :: ContainerId -> IO ()
-  , containerStatus :: ContainerId -> IO ContainerStatus
+    startContainer :: ContainerId -> IO (),
+    containerStatus :: ContainerId -> IO ContainerStatus,
+    createVolume :: IO Volume
   }
 
 data ContainerStatus
@@ -33,6 +35,9 @@ newtype ContainerExitCode = ContainerExitCode Int
 newtype ContainerId = ContainerId Text
   deriving (Eq, Show)
 
+newtype Volume = Volume Text
+  deriving (Eq, Show)
+
 type RequestBuilder = Text -> HTTP.Request
 
 imageToText :: Image -> Text
@@ -43,6 +48,9 @@ exitCodeToInt (ContainerExitCode code) = code
 
 containerIdToText :: ContainerId -> Text
 containerIdToText (ContainerId c) = c
+
+volumeToText :: Volume -> Text
+volumeToText (Volume v) = v
 
 parseResponse ::
   HTTP.Response ByteString ->
@@ -70,13 +78,16 @@ createService = do
   pure
     Service
       { createContainer = createContainer_ makeReq,
-        startContainer = startContainer_ makeReq
-      , containerStatus = containerStatus_ makeReq
+        startContainer = startContainer_ makeReq,
+        containerStatus = containerStatus_ makeReq,
+        createVolume = createVolume_ makeReq
       }
 
 createContainer_ :: RequestBuilder -> CreateContainerOptions -> IO ContainerId
 createContainer_ makeReq options = do
   let image = imageToText options.image
+  let bind = volumeToText options.volume <> ":/app"
+
   let body =
         Aeson.object
           [ ("Image", Aeson.toJSON image),
@@ -84,11 +95,13 @@ createContainer_ makeReq options = do
             ("Labels", Aeson.object [("quad", "")]),
             ("Entrypoint", Aeson.toJSON [Aeson.String "/bin/sh", "-c"]),
             ("Cmd", "echo \"$QUAD_SCRIPT\" | /bin/sh"),
-            ("Env", Aeson.toJSON ["QUAD_SCRIPT=" <> options.script])
+            ("Env", Aeson.toJSON ["QUAD_SCRIPT=" <> options.script]),
+            ("WorkingDir", "/app"),
+            ("HostConfig", Aeson.object [("Binds", Aeson.toJSON [bind])])
           ]
 
   let req =
-          makeReq "/containers/create"
+        makeReq "/containers/create"
           & HTTP.setRequestMethod "POST"
           & HTTP.setRequestBodyJSON body
 
@@ -105,7 +118,7 @@ startContainer_ makeReq container = do
         "/containers/" <> containerIdToText container <> "/start"
 
   let req =
-          makeReq path
+        makeReq path
           & HTTP.setRequestMethod "POST"
 
   void $ HTTP.httpBS req
@@ -122,8 +135,28 @@ containerStatus_ makeReq container = do
             pure $ ContainerExited (ContainerExitCode code)
           other -> pure $ ContainerOther other
 
-  let req = makeReq
-          $ "/containers/" <> containerIdToText container <> "/json"
+  let req =
+        makeReq $
+          "/containers/" <> containerIdToText container <> "/json"
+
+  res <- HTTP.httpBS req
+  parseResponse res parser
+
+createVolume_ :: RequestBuilder -> IO Volume
+createVolume_ makeReq = do
+  let body =
+        Aeson.object
+          [ ("Labels", Aeson.object [("quad", "")])
+          ]
+
+  let req =
+        makeReq "/volumes/create"
+          & HTTP.setRequestMethod "POST"
+          & HTTP.setRequestBodyJSON body
+
+  let parser = Aeson.withObject "create-volume" $ \o -> do
+        name <- o .: "Name"
+        pure $ Volume name
 
   res <- HTTP.httpBS req
   parseResponse res parser
