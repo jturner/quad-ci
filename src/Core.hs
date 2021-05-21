@@ -1,22 +1,20 @@
 module Core where
 
-import RIO
-import qualified RIO.Map as Map
-import qualified RIO.List as List
 import qualified Docker
+import RIO
+import qualified RIO.List as List
+import qualified RIO.Map as Map
 
-data Pipeline
-  = Pipeline
-      { steps :: NonEmpty Step
-      }
+data Pipeline = Pipeline
+  { steps :: NonEmpty Step
+  }
   deriving (Eq, Show)
 
-data Step
-  = Step
-      { name :: StepName
-      , commands :: NonEmpty Text
-      , image :: Docker.Image
-      }
+data Step = Step
+  { name :: StepName,
+    commands :: NonEmpty Text,
+    image :: Docker.Image
+  }
   deriving (Eq, Show)
 
 data StepResult
@@ -24,12 +22,11 @@ data StepResult
   | StepSucceeded
   deriving (Eq, Show)
 
-data Build
-  = Build
-      { pipeline :: Pipeline
-      , state :: BuildState
-      , completedSteps :: Map StepName StepResult
-      }
+data Build = Build
+  { pipeline :: Pipeline,
+    state :: BuildState,
+    completedSteps :: Map StepName StepResult
+  }
   deriving (Eq, Show)
 
 data BuildState
@@ -38,10 +35,9 @@ data BuildState
   | BuildFinished BuildResult
   deriving (Eq, Show)
 
-data BuildRunningState
-  = BuildRunningState
-      { step :: StepName
-      }
+data BuildRunningState = BuildRunningState
+  { step :: StepName
+  }
   deriving (Eq, Show)
 
 data BuildResult
@@ -73,23 +69,27 @@ buildHasNextStep build =
     nextStep = List.find f build.pipeline.steps
     f step = not $ Map.member step.name build.completedSteps
 
-progress :: Build -> IO Build
-progress build =
+progress :: Docker.Service -> Build -> IO Build
+progress docker build =
   case build.state of
     BuildReady ->
       case buildHasNextStep build of
         Left result ->
           pure $ build{state = BuildFinished result}
         Right step -> do
-          let s = BuildRunningState { step = step.name }
-          pure $ build{state = BuildRunning s}
+          let options = Docker.CreateContainerOptions step.image
+          container <- docker.createContainer options
+          docker.startContainer container
 
+          let s = BuildRunningState {step = step.name}
+          pure $ build{state = BuildRunning s}
     BuildRunning state -> do
       let exit = Docker.ContainerExitCode 0
           result = exitCodeToStepResult exit
 
-      pure build
-        { state = BuildReady
-        , completedSteps
-            = Map.insert state.step result build.completedSteps
-        }
+      pure
+        build
+          { state = BuildReady,
+            completedSteps =
+              Map.insert state.step result build.completedSteps
+          }
