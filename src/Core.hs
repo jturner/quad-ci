@@ -106,6 +106,7 @@ progress docker build =
                     script = script,
                     volume = build.volume
                   }
+          docker.pullImage step.image
           container <- docker.createContainer options
           docker.startContainer container
 
