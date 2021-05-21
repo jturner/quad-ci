@@ -14,7 +14,14 @@ data CreateContainerOptions = CreateContainerOptions
 data Service = Service
   { createContainer :: CreateContainerOptions -> IO ContainerId,
     startContainer :: ContainerId -> IO ()
+  , containerStatus :: ContainerId -> IO ContainerStatus
   }
+
+data ContainerStatus
+  = ContainerRunning
+  | ContainerExited ContainerExitCode
+  | ContainerOther Text
+  deriving (Eq, Show)
 
 newtype Image = Image Text
   deriving (Eq, Show)
@@ -53,6 +60,7 @@ createService = do
     Service
       { createContainer = createContainer_,
         startContainer = startContainer_
+      , containerStatus = undefined
       }
 
 createContainer_ :: CreateContainerOptions -> IO ContainerId
