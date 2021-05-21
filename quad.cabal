@@ -6,13 +6,19 @@ cabal-version: 1.12
 
 name:           quad
 version:        0.0.0
+license:        MIT
+license-file:   LICENSE
 build-type:     Simple
 
 library
   exposed-modules:
+      Agent
       Core
       Docker
+      JobHandler
+      JobHandler.Memory
       Runner
+      Server
       Socket
   other-modules:
       Paths_quad

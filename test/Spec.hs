@@ -11,6 +11,11 @@ import qualified Runner
 import qualified System.Process.Typed as Process
 import Test.Hspec
 import qualified Data.Yaml as Yaml
+import qualified Agent
+import qualified Server
+import qualified JobHandler
+import qualified Control.Concurrent.Async as Async
+import qualified JobHandler.Memory
 
 makeStep :: Text -> Text -> [Text] -> Step
 makeStep name image commands =
@@ -143,6 +148,42 @@ testYamlDecoding runner = do
   result <- runner.runBuild emptyHooks build
   result.state `shouldBe` BuildFinished BuildSucceeded
 
+testServerAndAgent :: Runner.Service -> IO ()
+testServerAndAgent runner = do
+  handler <- JobHandler.Memory.createService
+
+  serverThread <- Async.async do
+    Server.run (Server.Config 9000) handler
+
+  Async.link serverThread
+
+  agentThread <- Async.async do
+    Agent.run (Agent.Config "http://localhost:9000") runner
+
+  Async.link agentThread
+
+  let pipeline = makePipeline
+        [ makeStep "agent-test" "busybox" ["echo hello", "echo from agent"]
+        ]
+
+  number <- handler.queueJob pipeline
+  checkBuild handler number
+
+  Async.cancel serverThread
+  Async.cancel agentThread
+
+checkBuild :: JobHandler.Service -> BuildNumber -> IO ()
+checkBuild handler number = loop
+  where
+    loop = do
+      Just job <- handler.findJob number
+      case job.state of
+        JobHandler.JobScheduled build -> do
+          case build.state of
+            BuildFinished s -> s `shouldBe` BuildSucceeded
+            _ -> loop
+        _ -> loop
+
 main :: IO ()
 main = hspec do
   docker <- runIO Docker.createService
@@ -161,6 +202,8 @@ main = hspec do
       testLogCollection runner
     it "should pull images" do
       testImagePull runner
+    it "should run server and agent" do
+      testServerAndAgent runner
 
 cleanupDocker :: IO ()
 cleanupDocker = void do

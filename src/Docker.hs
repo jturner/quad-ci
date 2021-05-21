@@ -9,6 +9,7 @@ import RIO
 import qualified RIO.Text as Text
 import qualified RIO.Text.Partial as Text.Partial
 import qualified Socket
+import qualified Codec.Serialise as Serialise
 
 instance Aeson.FromJSON Image where
   parseJSON = Aeson.withText "parse-image" $ \image -> do
@@ -48,16 +49,16 @@ data FetchLogsOptions = FetchLogsOptions
   }
 
 data Image = Image {name :: Text, tag :: Text}
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show, Generic, Serialise.Serialise)
 
 newtype ContainerExitCode = ContainerExitCode Int
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, Serialise.Serialise)
 
 newtype ContainerId = ContainerId Text
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, Serialise.Serialise)
 
 newtype Volume = Volume Text
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, Serialise.Serialise)
 
 type RequestBuilder = Text -> HTTP.Request
 
