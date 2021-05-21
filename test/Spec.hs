@@ -10,6 +10,7 @@ import qualified RIO.Set as Set
 import qualified Runner
 import qualified System.Process.Typed as Process
 import Test.Hspec
+import qualified Data.Yaml as Yaml
 
 makeStep :: Text -> Text -> [Text] -> Step
 makeStep name image commands =
@@ -135,12 +136,21 @@ testImagePull runner = do
   result.state `shouldBe` BuildFinished BuildSucceeded
   Map.elems result.completedSteps `shouldBe` [StepSucceeded]
 
+testYamlDecoding :: Runner.Service -> IO ()
+testYamlDecoding runner = do
+  pipeline <- Yaml.decodeFileThrow "test/pipeline.sample.yml"
+  build <- runner.prepareBuild pipeline
+  result <- runner.runBuild emptyHooks build
+  result.state `shouldBe` BuildFinished BuildSucceeded
+
 main :: IO ()
 main = hspec do
   docker <- runIO Docker.createService
   runner <- runIO $ Runner.createService docker
 
   beforeAll cleanupDocker $ describe "Quad CI" do
+    it "should decode pipelines" do
+      testYamlDecoding runner
     it "should run a build (success)" do
       testRunSuccess runner
     it "should run a build (failure)" do
