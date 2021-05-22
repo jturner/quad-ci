@@ -10,17 +10,28 @@ import qualified JobHandler
 import qualified Network.HTTP.Simple as HTTP
 import RIO
 import qualified RIO.NonEmpty.Partial as NonEmpty.Partial
+import qualified RIO.Text as Text
 
 parsePushEvent :: ByteString -> IO JobHandler.CommitInfo
 parsePushEvent body = do
   let parser = Aeson.withObject "github-webhook" $ \event -> do
+        branch <-
+          event .: "ref" <&> \ref ->
+            Text.dropPrefix "refs/heads/" ref
+
         commit <- event .: "head_commit"
         sha <- commit .: "id"
+        message <- commit .: "message"
+        author <- commit .: "author" >>= \a -> a .: "username"
+
         repo <- event .: "repository" >>= \r -> r .: "full_name"
 
         pure
           JobHandler.CommitInfo
             { sha = sha,
+              branch = branch,
+              message = message,
+              author = author,
               repo = repo
             }
 
