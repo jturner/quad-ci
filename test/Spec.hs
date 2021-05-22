@@ -1,21 +1,21 @@
 module Main where
 
+import qualified Agent
+import qualified Control.Concurrent.Async as Async
 import Core
+import qualified Data.Yaml as Yaml
 import qualified Docker
+import qualified JobHandler
+import qualified JobHandler.Memory
 import RIO
 import qualified RIO.ByteString as ByteString
 import qualified RIO.Map as Map
 import qualified RIO.NonEmpty.Partial as NonEmpty.Partial
 import qualified RIO.Set as Set
 import qualified Runner
+import qualified Server
 import qualified System.Process.Typed as Process
 import Test.Hspec
-import qualified Data.Yaml as Yaml
-import qualified Agent
-import qualified Server
-import qualified JobHandler
-import qualified Control.Concurrent.Async as Async
-import qualified JobHandler.Memory
 
 makeStep :: Text -> Text -> [Text] -> Step
 makeStep name image commands =
@@ -60,7 +60,8 @@ runBuild docker build = do
 emptyHooks :: Runner.Hooks
 emptyHooks =
   Runner.Hooks
-    { logCollected = \_ -> pure ()
+    { logCollected = \_ -> pure (),
+      buildUpdated = \_ -> pure ()
     }
 
 testRunSuccess :: Runner.Service -> IO ()
@@ -113,7 +114,7 @@ testLogCollection runner = do
             (_, "") -> pure ()
             _ -> modifyMVar_ expected (pure . Set.delete word)
 
-  let hooks = Runner.Hooks {logCollected = onLog}
+  let hooks = Runner.Hooks {logCollected = onLog, buildUpdated = \_ -> pure ()}
 
   build <-
     runner.prepareBuild $
@@ -162,9 +163,10 @@ testServerAndAgent runner = do
 
   Async.link agentThread
 
-  let pipeline = makePipeline
-        [ makeStep "agent-test" "busybox" ["echo hello", "echo from agent"]
-        ]
+  let pipeline =
+        makePipeline
+          [ makeStep "agent-test" "busybox" ["echo hello", "echo from agent"]
+          ]
 
   number <- handler.queueJob pipeline
   checkBuild handler number

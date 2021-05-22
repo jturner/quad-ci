@@ -1,15 +1,14 @@
 module Server where
 
-import Core
-import RIO
-import qualified JobHandler
-import qualified Web.Scotty as Scotty
 import qualified Codec.Serialise as Serialise
+import Core
+import qualified JobHandler
+import RIO
+import qualified Web.Scotty as Scotty
 
-data Config
-  = Config
-      { port :: Int
-      }
+data Config = Config
+  { port :: Int
+  }
 
 run :: Config -> JobHandler.Service -> IO ()
 run config handler =

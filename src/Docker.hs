@@ -1,5 +1,6 @@
 module Docker where
 
+import qualified Codec.Serialise as Serialise
 import Data.Aeson ((.:))
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson.Types
@@ -9,7 +10,6 @@ import RIO
 import qualified RIO.Text as Text
 import qualified RIO.Text.Partial as Text.Partial
 import qualified Socket
-import qualified Codec.Serialise as Serialise
 
 instance Aeson.FromJSON Image where
   parseJSON = Aeson.withText "parse-image" $ \image -> do
