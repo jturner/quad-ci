@@ -79,6 +79,9 @@ stepNameToText (StepName step) = step
 buildNumberToInt :: BuildNumber -> Int
 buildNumberToInt (BuildNumber n) = n
 
+displayBuildNumber :: BuildNumber -> String
+displayBuildNumber number = "#" <> show (buildNumberToInt number)
+
 exitCodeToStepResult :: Docker.ContainerExitCode -> StepResult
 exitCodeToStepResult exit =
   if Docker.exitCodeToInt exit == 0

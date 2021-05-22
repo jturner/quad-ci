@@ -1,9 +1,9 @@
 module Agent where
 
-import Core
-import RIO
 import qualified Codec.Serialise as Serialise
+import Core
 import qualified Network.HTTP.Simple as HTTP
+import RIO
 import qualified Runner
 import qualified System.Log.Logger as Logger
 
@@ -16,15 +16,15 @@ data Msg
   | BuildUpdated BuildNumber Build
   deriving (Eq, Show, Generic, Serialise.Serialise)
 
-data Config
-  = Config
-      { endpoint :: String
-      }
+data Config = Config
+  { endpoint :: String
+  }
 
 run :: Config -> Runner.Service -> IO ()
 run config runner = forever do
   endpoint <- HTTP.parseRequest config.endpoint
-  let req = endpoint
+  let req =
+        endpoint
           & HTTP.setRequestMethod "POST"
           & HTTP.setRequestPath "/agent/pull"
 
@@ -41,22 +41,29 @@ run config runner = forever do
 runCommand :: Config -> Runner.Service -> Cmd -> IO ()
 runCommand config runner = \case
   StartBuild number pipeline -> do
-    let hooks = Runner.Hooks
-          { logCollected = \log -> do
-              sendMessage config $ LogCollected number log
-          , buildUpdated = \build -> do
-              sendMessage config $ BuildUpdated number build
-          }
+    let hooks =
+          Runner.Hooks
+            { logCollected = \log -> do
+                sendMessage config $ LogCollected number log,
+              buildUpdated = \build -> do
+                sendMessage config $ BuildUpdated number build
+            }
+
+    let n = Core.displayBuildNumber number
+    Logger.infoM "quad.agent" $ "Starting build " <> n
 
     build <- runner.prepareBuild pipeline
     void $ runner.runBuild hooks build
+
+    Logger.infoM "quad.agent" $ "Finished build " <> n
 
 sendMessage :: Config -> Msg -> IO ()
 sendMessage config msg = do
   base <- HTTP.parseRequest config.endpoint
 
   let body = Serialise.serialise msg
-  let req = base
+  let req =
+        base
           & HTTP.setRequestMethod "POST"
           & HTTP.setRequestPath "/agent/send"
           & HTTP.setRequestBodyLBS body

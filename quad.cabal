@@ -13,6 +13,7 @@ build-type:     Simple
 library
   exposed-modules:
       Agent
+      Cli
       Core
       Docker
       Github
