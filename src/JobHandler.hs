@@ -22,3 +22,9 @@ data Service = Service
     processMsg :: Agent.Msg -> IO (),
     findJob :: BuildNumber -> IO (Maybe Job)
   }
+
+data CommitInfo = CommitInfo
+  { sha :: Text,
+    repo :: Text
+  }
+  deriving (Eq, Show)
