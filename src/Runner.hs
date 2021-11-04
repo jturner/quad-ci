@@ -1,8 +1,8 @@
 module Runner where
 
-import Core
+import           Core
 import qualified Docker
-import RIO
+import           RIO
 
 data Hooks = Hooks
   { logCollected :: Log -> IO (),
@@ -10,7 +10,7 @@ data Hooks = Hooks
   }
 
 data Service = Service
-  { runBuild :: Hooks -> Build -> IO Build,
+  { runBuild     :: Hooks -> Build -> IO Build,
     prepareBuild :: Pipeline -> IO Build
   }
 

@@ -2,15 +2,15 @@ module JobHandler.Memory where
 
 import qualified Agent
 import qualified Control.Concurrent.STM as STM
-import Core
+import           Core
 import qualified JobHandler
-import RIO
-import qualified RIO.List as List
-import qualified RIO.Map as Map
+import           RIO
+import qualified RIO.List               as List
+import qualified RIO.Map                as Map
 
 data State = State
-  { jobs :: Map BuildNumber JobHandler.Job,
-    logs :: Map (BuildNumber, StepName) ByteString,
+  { jobs      :: Map BuildNumber JobHandler.Job,
+    logs      :: Map (BuildNumber, StepName) ByteString,
     nextBuild :: Int
   }
 

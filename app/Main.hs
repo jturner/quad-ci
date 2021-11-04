@@ -1,11 +1,11 @@
 module Main where
 
 import qualified Cli
-import RIO
-import qualified System.Log.Formatter as Logger
-import qualified System.Log.Handler as Handler
+import           RIO
+import qualified System.Log.Formatter      as Logger
+import qualified System.Log.Handler        as Handler
 import qualified System.Log.Handler.Simple as Logger
-import qualified System.Log.Logger as Logger
+import qualified System.Log.Logger         as Logger
 
 initLogger :: IO ()
 initLogger = do

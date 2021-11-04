@@ -1,11 +1,11 @@
 module Agent where
 
-import qualified Codec.Serialise as Serialise
-import Core
+import qualified Codec.Serialise     as Serialise
+import           Core
 import qualified Network.HTTP.Simple as HTTP
-import RIO
+import           RIO
 import qualified Runner
-import qualified System.Log.Logger as Logger
+import qualified System.Log.Logger   as Logger
 
 data Cmd
   = StartBuild BuildNumber Pipeline

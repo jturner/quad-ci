@@ -1,14 +1,14 @@
 module Docker where
 
-import qualified Codec.Serialise as Serialise
-import Data.Aeson ((.:))
-import qualified Data.Aeson as Aeson
-import qualified Data.Aeson.Types as Aeson.Types
+import qualified Codec.Serialise       as Serialise
+import           Data.Aeson            ((.:))
+import qualified Data.Aeson            as Aeson
+import qualified Data.Aeson.Types      as Aeson.Types
 import qualified Data.Time.Clock.POSIX as Time
-import qualified Network.HTTP.Simple as HTTP
-import RIO
-import qualified RIO.Text as Text
-import qualified RIO.Text.Partial as Text.Partial
+import qualified Network.HTTP.Simple   as HTTP
+import           RIO
+import qualified RIO.Text              as Text
+import qualified RIO.Text.Partial      as Text.Partial
 import qualified Socket
 
 instance Aeson.FromJSON Image where
@@ -22,18 +22,18 @@ instance Aeson.FromJSON Image where
         fail $ "Image has too many colons " <> Text.unpack image
 
 data CreateContainerOptions = CreateContainerOptions
-  { image :: Image,
+  { image  :: Image,
     script :: Text,
     volume :: Volume
   }
 
 data Service = Service
   { createContainer :: CreateContainerOptions -> IO ContainerId,
-    startContainer :: ContainerId -> IO (),
+    startContainer  :: ContainerId -> IO (),
     containerStatus :: ContainerId -> IO ContainerStatus,
-    createVolume :: IO Volume,
-    fetchLogs :: FetchLogsOptions -> IO ByteString,
-    pullImage :: Image -> IO ()
+    createVolume    :: IO Volume,
+    fetchLogs       :: FetchLogsOptions -> IO ByteString,
+    pullImage       :: Image -> IO ()
   }
 
 data ContainerStatus
@@ -44,8 +44,8 @@ data ContainerStatus
 
 data FetchLogsOptions = FetchLogsOptions
   { container :: ContainerId,
-    since :: Time.POSIXTime,
-    until :: Time.POSIXTime
+    since     :: Time.POSIXTime,
+    until     :: Time.POSIXTime
   }
 
 data Image = Image {name :: Text, tag :: Text}
@@ -84,7 +84,7 @@ parseResponse res parser = do
         Aeson.Types.parseEither parser value
 
   case result of
-    Left e -> throwString e
+    Left e       -> throwString e
     Right status -> pure status
 
 createService :: IO Service

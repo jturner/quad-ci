@@ -1,17 +1,17 @@
 module Server where
 
-import qualified Codec.Serialise as Serialise
-import Core
-import qualified Data.Aeson as Aeson
+import qualified Codec.Serialise             as Serialise
+import           Core
+import qualified Data.Aeson                  as Aeson
 import qualified Github
 import qualified JobHandler
-import qualified Network.HTTP.Types as HTTP.Types
+import qualified Network.HTTP.Types          as HTTP.Types
 import qualified Network.Wai.Middleware.Cors as Cors
-import RIO
-import qualified RIO.Map as Map
-import qualified RIO.NonEmpty as NonEmpty
-import qualified System.Log.Logger as Logger
-import qualified Web.Scotty as Scotty
+import           RIO
+import qualified RIO.Map                     as Map
+import qualified RIO.NonEmpty                as NonEmpty
+import qualified System.Log.Logger           as Logger
+import qualified Web.Scotty                  as Scotty
 
 data Config = Config
   { port :: Int
@@ -27,8 +27,8 @@ jobToJson number job =
     ]
   where
     build = case job.state of
-      JobHandler.JobQueued -> Nothing
-      JobHandler.JobAssigned -> Nothing
+      JobHandler.JobQueued      -> Nothing
+      JobHandler.JobAssigned    -> Nothing
       JobHandler.JobScheduled b -> Just b
     steps =
       job.pipeline.steps <&> \step ->
@@ -36,7 +36,7 @@ jobToJson number job =
           [ ("name", Aeson.String $ Core.stepNameToText step.name),
             ( "state",
               Aeson.String $ case build of
-                Just b -> stepStateToText b step
+                Just b  -> stepStateToText b step
                 Nothing -> "ready"
             )
           ]
@@ -49,8 +49,8 @@ jobStateToText = \case
     BuildReady -> "ready"
     BuildRunning _ -> "running"
     BuildFinished result -> case result of
-      BuildSucceeded -> "succeeded"
-      BuildFailed -> "failed"
+      BuildSucceeded         -> "succeeded"
+      BuildFailed            -> "failed"
       BuildUnexpectedState _ -> "unexpectedstate"
 
 stepStateToText :: Build -> Step -> Text
@@ -68,7 +68,7 @@ stepStateToText build step =
       Just (StepFailed _) -> "failed"
       Nothing -> case build.state of
         BuildFinished _ -> "skipped"
-        _ -> "ready"
+        _               -> "ready"
 
 run :: Config -> JobHandler.Service -> IO ()
 run config handler =
@@ -119,7 +119,7 @@ run config handler =
           (handler.findJob number)
           >>= \case
             Nothing -> Scotty.raiseStatus HTTP.Types.status404 "Build not found"
-            Just j -> pure j
+            Just j  -> pure j
 
       Scotty.json $ jobToJson number job
 
@@ -135,4 +135,4 @@ run config handler =
       jobs <- Scotty.liftAndCatchIO do
         handler.latestJobs
 
-      Scotty.json $ jobs <&> \(number, job) -> jobToJson number job
+      Scotty.json $ jobs <&> uncurry jobToJson

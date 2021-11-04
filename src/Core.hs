@@ -1,14 +1,14 @@
 module Core where
 
-import qualified Codec.Serialise as Serialise
-import qualified Data.Aeson as Aeson
+import qualified Codec.Serialise       as Serialise
+import qualified Data.Aeson            as Aeson
 import qualified Data.Time.Clock.POSIX as Time
 import qualified Docker
-import RIO
-import qualified RIO.List as List
-import qualified RIO.Map as Map
-import qualified RIO.NonEmpty as NonEmpty
-import qualified RIO.Text as Text
+import           RIO
+import qualified RIO.List              as List
+import qualified RIO.Map               as Map
+import qualified RIO.NonEmpty          as NonEmpty
+import qualified RIO.Text              as Text
 
 data Pipeline = Pipeline
   { steps :: NonEmpty Step
@@ -16,9 +16,9 @@ data Pipeline = Pipeline
   deriving (Eq, Show, Generic, Aeson.FromJSON, Serialise.Serialise)
 
 data Step = Step
-  { name :: StepName,
+  { name     :: StepName,
     commands :: NonEmpty Text,
-    image :: Docker.Image
+    image    :: Docker.Image
   }
   deriving (Eq, Show, Generic, Aeson.FromJSON, Serialise.Serialise)
 
@@ -28,10 +28,10 @@ data StepResult
   deriving (Eq, Show, Generic, Serialise.Serialise)
 
 data Build = Build
-  { pipeline :: Pipeline,
-    state :: BuildState,
+  { pipeline       :: Pipeline,
+    state          :: BuildState,
     completedSteps :: Map StepName StepResult,
-    volume :: Docker.Volume
+    volume         :: Docker.Volume
   }
   deriving (Eq, Show, Generic, Serialise.Serialise)
 
@@ -42,7 +42,7 @@ data BuildState
   deriving (Eq, Show, Generic, Serialise.Serialise)
 
 data BuildRunningState = BuildRunningState
-  { step :: StepName,
+  { step      :: StepName,
     container :: Docker.ContainerId
   }
   deriving (Eq, Show, Generic, Serialise.Serialise)
@@ -61,7 +61,7 @@ data CollectionStatus
 
 data Log = Log
   { output :: ByteString,
-    step :: StepName
+    step   :: StepName
   }
   deriving (Eq, Show, Generic, Serialise.Serialise)
 
@@ -93,10 +93,10 @@ buildHasNextStep build =
   if allSucceeded
     then case nextStep of
       Just step -> Right step
-      Nothing -> Left BuildSucceeded
+      Nothing   -> Left BuildSucceeded
     else Left BuildFailed
   where
-    allSucceeded = List.all ((==) StepSucceeded) build.completedSteps
+    allSucceeded = List.all (StepSucceeded ==) build.completedSteps
     nextStep = List.find f build.pipeline.steps
     f step = not $ Map.member step.name build.completedSteps
 
@@ -156,8 +156,7 @@ updateCollection ::
   Time.POSIXTime ->
   LogCollection ->
   LogCollection
-updateCollection state lastCollection collection =
-  Map.mapWithKey f collection
+updateCollection state lastCollection = Map.mapWithKey f
   where
     update step since nextState =
       case state of

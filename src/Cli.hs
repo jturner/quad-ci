@@ -3,10 +3,10 @@ module Cli where
 import qualified Agent
 import qualified Docker
 import qualified JobHandler.Memory
-import RIO
+import           RIO
 import qualified Runner
 import qualified Server
-import qualified System.Log.Logger as Logger
+import qualified System.Log.Logger  as Logger
 import qualified UI.Butcher.Monadic as Butcher
 
 data Command

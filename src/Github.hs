@@ -1,16 +1,16 @@
 module Github where
 
-import Core
-import Data.Aeson ((.:))
-import qualified Data.Aeson as Aeson
-import qualified Data.Aeson.Types as Aeson.Types
-import qualified Data.Yaml as Yaml
+import           Core
+import           Data.Aeson           ((.:))
+import qualified Data.Aeson           as Aeson
+import qualified Data.Aeson.Types     as Aeson.Types
+import qualified Data.Yaml            as Yaml
 import qualified Docker
 import qualified JobHandler
-import qualified Network.HTTP.Simple as HTTP
-import RIO
+import qualified Network.HTTP.Simple  as HTTP
+import           RIO
 import qualified RIO.NonEmpty.Partial as NonEmpty.Partial
-import qualified RIO.Text as Text
+import qualified RIO.Text             as Text
 
 parsePushEvent :: ByteString -> IO JobHandler.CommitInfo
 parsePushEvent body = do
@@ -40,7 +40,7 @@ parsePushEvent body = do
         Aeson.Types.parseEither parser value
 
   case result of
-    Left e -> throwString e
+    Left e     -> throwString e
     Right info -> pure info
 
 fetchRemotePipeline :: JobHandler.CommitInfo -> IO Pipeline

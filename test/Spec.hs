@@ -2,23 +2,23 @@ module Main where
 
 import qualified Agent
 import qualified Control.Concurrent.Async as Async
-import Core
-import qualified Data.Aeson as Aeson
-import qualified Data.Yaml as Yaml
+import           Core
+import qualified Data.Aeson               as Aeson
+import qualified Data.Yaml                as Yaml
 import qualified Docker
 import qualified JobHandler
 import qualified JobHandler.Memory
-import qualified Network.HTTP.Simple as HTTP
-import RIO
-import qualified RIO.ByteString as ByteString
-import qualified RIO.HashMap as HashMap
-import qualified RIO.Map as Map
-import qualified RIO.NonEmpty.Partial as NonEmpty.Partial
-import qualified RIO.Set as Set
+import qualified Network.HTTP.Simple      as HTTP
+import           RIO
+import qualified RIO.ByteString           as ByteString
+import qualified RIO.HashMap              as HashMap
+import qualified RIO.Map                  as Map
+import qualified RIO.NonEmpty.Partial     as NonEmpty.Partial
+import qualified RIO.Set                  as Set
 import qualified Runner
 import qualified Server
-import qualified System.Process.Typed as Process
-import Test.Hspec
+import qualified System.Process.Typed     as Process
+import           Test.Hspec
 
 makeStep :: Text -> Text -> [Text] -> Step
 makeStep name image commands =
@@ -115,7 +115,7 @@ testLogCollection runner = do
         forM_ remaining $ \word -> do
           case ByteString.breakSubstring word log.output of
             (_, "") -> pure ()
-            _ -> modifyMVar_ expected (pure . Set.delete word)
+            _       -> modifyMVar_ expected (pure . Set.delete word)
 
   let hooks = Runner.Hooks {logCollected = onLog, buildUpdated = \_ -> pure ()}
 
@@ -199,7 +199,7 @@ checkBuild handler number = loop
         JobHandler.JobScheduled build -> do
           case build.state of
             BuildFinished s -> s `shouldBe` BuildSucceeded
-            _ -> loop
+            _               -> loop
         _ -> loop
 
 testWebhookTrigger :: Runner.Service -> IO ()
