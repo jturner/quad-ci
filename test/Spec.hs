@@ -4,6 +4,7 @@ import qualified Agent
 import qualified Control.Concurrent.Async as Async
 import           Core
 import qualified Data.Aeson               as Aeson
+import qualified Data.Aeson.KeyMap        as KeyMap
 import qualified Data.Yaml                as Yaml
 import qualified Docker
 import qualified JobHandler
@@ -216,7 +217,7 @@ testWebhookTrigger =
     res <- HTTP.httpBS req
 
     let Right (Aeson.Object build) = Aeson.eitherDecodeStrict $ HTTP.getResponseBody res
-    let Just (Aeson.Number number) = HashMap.lookup "number" build
+    let Just (Aeson.Number number) = KeyMap.lookup "number" build
 
     checkBuild handler $ Core.BuildNumber (round number)
 
